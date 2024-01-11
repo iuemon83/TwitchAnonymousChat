@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Twitch匿名チャット</title>
+    <link rel="stylesheet" href="./index.css" />
+    <script src="./scripts/tmi.min.js"></script>
+    <script src="./scripts/twitch-anonymouse-chat.js"></script>
+  </head>
+  <body>
+    <h1>Twitch匿名チャット</h1>
+    <div id="no-connect" style="display: none">
+      <fieldset id="pre-settings">
+        まずTwitchと連携してください。<br />
+        連携情報はバッジ情報を取得するためのAPIリクエストに使用します。
+        <p id="connect-twitch"></p>
+      </fieldset>
+    </div>
+
+    <div id="connected" style="display: none">
+      <details id="settings" open>
+        <summary>設定</summary>
+        「チャンネル名」にチャットを取得したいチャンネルの名前を入力してください。<br />
+        「匿名ユーザー名」にランダムに割り振りたいユーザー名を入力してください。<br />
+        入力し終わって「取得スタート」ボタンをクリックすると、チャットが下の黒い部分に表示されます。
+        <p>
+          チャンネル名
+          <input id="channel-name" type="text" value="kingofsimoyaka" />
+        </p>
+        <p>匿名ユーザー名</p>
+        <textarea id="alias-names" cols="40" rows="15">
+🐵さる
+🐶いぬ
+🐺おおかみ
+🦊きつね
+🦝たぬき
+🦁ライオン
+🐯トラ
+🐮うし
+      </textarea
+        >
+
+        <p>
+          <button id="start-button">取得スタート</button>
+          <button id="stop-button">取得ストップ</button>
+        </p>
+        <p id="logout-twitch"></p>
+      </details>
+
+      <div id="chat-body"></div>
+    </div>
+  </body>
+</html>
