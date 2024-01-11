@@ -41,11 +41,28 @@ const twitchRepository = (appSettings, userSettings, authToken) => {
   };
 
   /**
-   * サブスクライバーバッジの一覧を取得する
+   * 汎用バッジの一覧を取得する
+   * @returns
+   */
+  const listGlobalBadges = async () => {
+    const response = await fetch(`https://api.twitch.tv/helix/chat/badges/global`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Client-Id": appSettings.twitch.clientId,
+      },
+    });
+    const data = await response.json();
+    console.debug(data);
+    return buildBadges(data);
+  };
+
+  /**
+   * チャンネル固有のバッジの一覧を取得する
    * @param {*} broadcasterId
    * @returns
    */
-  const listBadges = async (broadcasterId) => {
+  const listBroadcasterBadges = async (broadcasterId) => {
     const response = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${broadcasterId}`, {
       method: "GET",
       headers: {
@@ -55,9 +72,12 @@ const twitchRepository = (appSettings, userSettings, authToken) => {
     });
     const data = await response.json();
     console.debug(data);
+    return buildBadges(data);
+  };
 
+  const buildBadges = (badgesApiResponse) => {
     let badges = {};
-    data.data.forEach((badge) => {
+    badgesApiResponse.data.forEach((badge) => {
       const key = badge["set_id"];
       if (badges[key] === undefined) {
         badges[key] = {};
@@ -75,7 +95,8 @@ const twitchRepository = (appSettings, userSettings, authToken) => {
 
   return {
     getBroadcasterId,
-    listBadges,
+    listGlobalBadges,
+    listBroadcasterBadges,
   };
 };
 
@@ -116,7 +137,7 @@ const aliasRepository = (userSettings) => {
  * @param {*} badges
  * @returns
  */
-const ircFactory = (userSettings, aliasRepo, badges) => {
+const ircFactory = (userSettings, aliasRepo, globalBadges, broadcasterBadges) => {
   const chatBody = document.getElementById("chat-body");
   const tmiClient = new tmi.Client({
     channels: [userSettings.channnelName],
@@ -140,7 +161,16 @@ const ircFactory = (userSettings, aliasRepo, badges) => {
 
       if (tags.badges) {
         chat.badgeUrls = Object.keys(tags.badges)
-          .map((key) => badges[key]?.[tags.badges[key]])
+          .map((key) => {
+            // チャンネル固有のバッジになければ汎用のバッジを探す
+
+            const url = broadcasterBadges[key]?.[tags.badges[key]];
+            if (url) {
+              return url;
+            }
+
+            return globalBadges[key]?.[tags.badges[key]];
+          })
           .filter((x) => x);
       }
 
@@ -192,9 +222,10 @@ const startChat = async (appSettings, authToken) => {
   const twitch = twitchRepository(appSettings, userSettings, authToken);
 
   const broadcasterId = await twitch.getBroadcasterId();
-  const badges = await twitch.listBadges(broadcasterId);
+  const globalBadges = await twitch.listGlobalBadges();
+  const broadcasterBadges = await twitch.listBroadcasterBadges(broadcasterId);
 
-  const irc = ircFactory(userSettings, aliasRepo, badges);
+  const irc = ircFactory(userSettings, aliasRepo, globalBadges, broadcasterBadges);
   irc.start();
 
   return irc;
